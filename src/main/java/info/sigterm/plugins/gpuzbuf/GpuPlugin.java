@@ -207,6 +207,12 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		return subs[wvid];
 	}
 
+	SceneContext context(WorldView wv) {
+		int wvid = wv.getId();
+		if (wvid == -1) return root;
+		return subs[wvid];
+	}
+
 	private Zone[][] nextZones;
 	private Map<Integer, Integer> nextRoofChanges;
 
@@ -328,10 +334,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 
 				client.setDrawCallbacks(this);
 				client.setGpuFlags(DrawCallbacks.GPU
-//					| (computeMode == ComputeMode.NONE ? 0 : DrawCallbacks.HILLSKEW)
 					| (config.removeVertexSnapping() ? DrawCallbacks.NO_VERTEX_SNAPPING : 0)
 					| DrawCallbacks.ZBUF
-//					|16
 				);
 				client.setExpandedMapLoading(config.expandedMapLoadingChunks());
 
@@ -417,9 +421,6 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 				shutdownFbo();
 			}
 
-			// this must shutdown after the clgl buffers are freed
-//			openCLManager.cleanup();
-
 			if (awtContext != null)
 			{
 				awtContext.destroy();
@@ -472,7 +473,6 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			{
 				log.debug("Toggle {}", configChanged.getKey());
 				client.setGpuFlags(DrawCallbacks.GPU
-//					| (computeMode == ComputeMode.NONE ? 0 : DrawCallbacks.HILLSKEW)
 					| (config.removeVertexSnapping() ? DrawCallbacks.NO_VERTEX_SNAPPING : 0)
 					| DrawCallbacks.ZBUF
 				);
@@ -990,8 +990,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 
 			glBindVertexArray(z.glVao);
 			z.computeDrawRanges(false, minLevel, level, maxLevel, hideRoofIds);
-
-			glMultiDrawArrays(GL_TRIANGLES, z.glDrawOffset, z.glDrawLength);
+			glMultiDrawArrays(GL_TRIANGLES, Zone.glDrawOffset, Zone.glDrawLength);
 		}
 		else if (pass == DrawCallbacks.PASS_ALPHA)
 		{
@@ -1008,7 +1007,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			z.computeDrawRanges(true, minLevel, level, maxLevel, hideRoofIds);
 
 			glDepthMask(false);
-			glMultiDrawArrays(GL_TRIANGLES, z.glDrawOffset, z.glDrawLength);
+			glMultiDrawArrays(GL_TRIANGLES, Zone.glDrawOffset, Zone.glDrawLength);
 			glDepthMask(true);
 		}
 
@@ -1065,7 +1064,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	}
 
 	@Override
-	public void drawDynamic(Projection projection, Scene scene, TileObject tileObject, Renderable r, Model m, int orient, int x, int y, int z)
+	public void drawDynamic(Projection worldProjection, Scene scene, TileObject tileObject, Renderable r, Model m, int orient, int x, int y, int z)
 	{
 		SceneContext ctx = context(scene);
 		int size = m.getFaceCount() * 3 * VAO.VERT_SIZE;
@@ -1074,7 +1073,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	}
 
 	@Override
-	public void drawTemp(Projection projection, Scene scene, GameObject gameObject, Model m)
+	public void drawTemp(Projection worldProjection, Scene scene, GameObject gameObject, Model m)
 	{
 		SceneContext ctx = context(scene);
 		if (ctx == null) return;
@@ -1090,7 +1089,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		} else {
 			m.calculateBoundsCylinder();
 			VAO o = ctx.vaoP.get(size), a = o;
-			facePrioritySorter.pushSortedModel(projection, m, g.getModelOrientation(), g.getX(), g.getZ(), g.getY(), o.vbo.vb, a.vbo.vb);
+			facePrioritySorter.pushSortedModel(worldProjection, m, g.getModelOrientation(), g.getX(), g.getZ(), g.getY(), o.vbo.vb, a.vbo.vb);
 		}
 	}
 
@@ -1099,20 +1098,26 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	{
 		SceneContext ctx = context(scene);
 		Zone z = ctx.zones[zx][zz];
-		z.invalidate = true;
+		if (!z.invalidate)
+		{
+			z.invalidate = true;
+			log.debug("Zone invalidated: wx={} x={} z={}", scene.getWorldViewId(), zx, zz);
+		}
 	}
 
 	@Subscribe
 	public void onPostClientTick(PostClientTick event)
 	{
-		//XXX gs check?
-		rebuild(root);
-		for(int i = 0; i < 2048 ;++i) {
-			rebuild(subs[i]);
+		WorldView wv = client.getTopLevelWorldView();
+		rebuild(wv);
+		for (WorldEntity we : wv.worldEntities()) {
+			wv = we.getWorldView();
+			rebuild(wv);
 		}
 	}
 
-	private void rebuild(SceneContext ctx){
+	private void rebuild(WorldView wv){
+		SceneContext ctx = context(wv);
 		if (ctx==null)return;
 		for (int x = 0; x < ctx.sizeX; ++x)
 		{
@@ -1128,7 +1133,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 				zone.free();
 				zone = ctx.zones[x][z] = new Zone();
 
-				Scene scene = client.getScene();
+				Scene scene = wv.getScene();
 				sceneUploader.zoneSize(scene, zone, x, z);
 
 				int sz = zone.sizeO * Zone.VERT_SIZE * 3;
@@ -1153,7 +1158,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 				zone.initialized = true;
 				zone.dirty = true;
 
-				log.debug("Reuploaded zone {} {}", x, z);
+				log.debug("Rebuilt zone wv={} x={} z={}", wv.getId(), x, z);
 			}
 		}
 	}
@@ -1184,7 +1189,6 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			// Reset
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, awtContext.getFramebuffer(false));
 		}
-
 	}
 
 	private void prepareInterfaceTexture(int canvasWidth, int canvasHeight)

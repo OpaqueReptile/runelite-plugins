@@ -33,6 +33,7 @@ import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Constants;
 import net.runelite.api.DecorativeObject;
+import net.runelite.api.DynamicObject;
 import net.runelite.api.GameObject;
 import net.runelite.api.GroundObject;
 import net.runelite.api.Model;
@@ -220,8 +221,8 @@ class SceneUploader
 		}
 	}
 
-	private void zoneSize(Scene scene, Zone z, Tile t,  int basex, int basez) {
-
+	private void zoneSize(Scene scene, Zone z, Tile t, int basex, int basez)
+	{
 		SceneTilePaint paint = t.getSceneTilePaint();
 		if (paint != null)
 		{
@@ -229,50 +230,36 @@ class SceneUploader
 		}
 
 		SceneTileModel model = t.getSceneTileModel();
-		if (model != null) {
-			z.sizeO +=  model.getFaceX().length;
+		if (model != null)
+		{
+			z.sizeO += model.getFaceX().length;
 		}
 
 		WallObject wallObject = t.getWallObject();
 		if (wallObject != null)
 		{
 			Renderable renderable1 = wallObject.getRenderable1();
-			if (renderable1 instanceof Model)
-			{
-				zoneModelSize(z, (Model) renderable1);
-			}
+			zoneRenderableSize(z, renderable1);
 
 			Renderable renderable2 = wallObject.getRenderable2();
-			if (renderable2 instanceof Model)
-			{
-				zoneModelSize(z, (Model) renderable2);
-			}
+			zoneRenderableSize(z, renderable2);
 		}
 
 		DecorativeObject decorativeObject = t.getDecorativeObject();
 		if (decorativeObject != null)
 		{
 			Renderable renderable = decorativeObject.getRenderable();
-			if (renderable instanceof Model)
-			{
-				zoneModelSize(z, (Model) renderable);
-			}
+			zoneRenderableSize(z, renderable);
 
 			Renderable renderable2 = decorativeObject.getRenderable2();
-			if (renderable2 instanceof Model)
-			{
-				zoneModelSize(z, (Model) renderable2);
-			}
+			zoneRenderableSize(z, renderable2);
 		}
 
 		GroundObject groundObject = t.getGroundObject();
 		if (groundObject != null)
 		{
 			Renderable renderable = groundObject.getRenderable();
-			if (renderable instanceof Model)
-			{
-				zoneModelSize(z, (Model) renderable);
-			}
+			zoneRenderableSize(z, renderable);
 		}
 
 		GameObject[] gameObjects = t.getGameObjects();
@@ -283,18 +270,19 @@ class SceneUploader
 				continue;
 			}
 
-			if (!gameObject.getSceneMinLocation().equals(t.getSceneLocation())) continue;
+			if (!gameObject.getSceneMinLocation().equals(t.getSceneLocation()))
+			{
+				continue;
+			}
 
 			Renderable renderable = gameObject.getRenderable();
-			if (renderable instanceof Model)
-			{
-					zoneModelSize(z, (Model) renderable);
-			}
+			zoneRenderableSize(z, renderable);
 		}
 
 		Tile bridge = t.getBridge();
-		if (bridge != null) {
-			 zoneSize(scene, z, bridge, basex, basez);
+		if (bridge != null)
+		{
+			zoneSize(scene, z, bridge, basex, basez);
 		}
 	}
 
@@ -325,42 +313,27 @@ class SceneUploader
 		if (wallObject != null)
 		{
 			Renderable renderable1 = wallObject.getRenderable1();
-			if (renderable1 instanceof Model)
-			{
-				pushZoneModel0((Model) renderable1, wallObject.getX()-basex, wallObject.getZ(), wallObject.getY()-basez, vertexBuffer, ab);
-			}
+			uploadZoneRenderable(renderable1, wallObject.getX() - basex, wallObject.getZ(), wallObject.getY() - basez, vertexBuffer, ab);
 
 			Renderable renderable2 = wallObject.getRenderable2();
-			if (renderable2 instanceof Model)
-			{
-				pushZoneModel0((Model) renderable2, wallObject.getX()-basex, wallObject.getZ(), wallObject.getY()-basez, vertexBuffer, ab);
-			}
+			uploadZoneRenderable(renderable2, wallObject.getX() - basex, wallObject.getZ(), wallObject.getY() - basez, vertexBuffer, ab);
 		}
 
 		DecorativeObject decorativeObject = t.getDecorativeObject();
 		if (decorativeObject != null)
 		{
 			Renderable renderable = decorativeObject.getRenderable();
-			if (renderable instanceof Model)
-			{
-				pushZoneModel0((Model) renderable, decorativeObject.getX() + decorativeObject.getXOffset() - basex, decorativeObject.getZ(), decorativeObject.getY() + decorativeObject.getYOffset() - basez, vertexBuffer, ab);
-			}
+			uploadZoneRenderable(renderable, decorativeObject.getX() + decorativeObject.getXOffset() - basex, decorativeObject.getZ(), decorativeObject.getY() + decorativeObject.getYOffset() - basez, vertexBuffer, ab);
 
 			Renderable renderable2 = decorativeObject.getRenderable2();
-			if (renderable2 instanceof Model)
-			{
-				pushZoneModel0((Model) renderable2, decorativeObject.getX() + decorativeObject.getXOffset() - basex, decorativeObject.getZ(), decorativeObject.getY() - decorativeObject.getYOffset() - basez, vertexBuffer, ab);
-			}
+			uploadZoneRenderable(renderable2, decorativeObject.getX() + decorativeObject.getXOffset() - basex, decorativeObject.getZ(), decorativeObject.getY() - decorativeObject.getYOffset() - basez, vertexBuffer, ab);
 		}
 
 		GroundObject groundObject = t.getGroundObject();
 		if (groundObject != null)
 		{
 			Renderable renderable = groundObject.getRenderable();
-			if (renderable instanceof Model)
-			{
-				pushZoneModel0((Model) renderable, groundObject.getX()-basex, groundObject.getZ(), groundObject.getY()-basez, vertexBuffer, ab);
-			}
+			uploadZoneRenderable(renderable, groundObject.getX() - basex, groundObject.getZ(), groundObject.getY() - basez, vertexBuffer, ab);
 		}
 
 		GameObject[] gameObjects = t.getGameObjects();
@@ -371,47 +344,82 @@ class SceneUploader
 				continue;
 			}
 
-			if (!gameObject.getSceneMinLocation().equals(t.getSceneLocation())) continue;
+			if (!gameObject.getSceneMinLocation().equals(t.getSceneLocation()))
+			{
+				continue;
+			}
 
 			Renderable renderable = gameObject.getRenderable();
-			if (renderable instanceof Model)
-			{
-				pushZoneModel0((Model) renderable, gameObject.getX()-basex, gameObject.getZ(), gameObject.getY()-basez, vertexBuffer, ab);
-			}
+			uploadZoneRenderable(renderable, gameObject.getX() - basex, gameObject.getZ(), gameObject.getY() - basez, vertexBuffer, ab);
 		}
 
 		Tile bridge = t.getBridge();
-		if (bridge != null) {
+		if (bridge != null)
+		{
 			len += uploadZoneTile(scene, bridge, vertexBuffer, ab, basex, basez);
 		}
 
 		return len;
 	}
 
-	private void zoneModelSize(Zone z, Model m) {
+	private void zoneRenderableSize(Zone z, Renderable r)
+	{
+		Model m = null;
+		if (r instanceof Model)
+		{
+			m = (Model) r;
+		}
+		else if (r instanceof DynamicObject)
+		{
+			m = r.getModel();
+		}
+		if (m == null)
+		{
+			return;
+		}
+
 		byte[] transparencies = m.getFaceTransparencies();
-		short[] faceTextures = m.getFaceTextures();
 		int faceCount = m.getFaceCount();
-		if (transparencies != null || faceTextures != null) {
-			for (int face = 0; face < faceCount; ++face) {
-				boolean atex = (transparencies != null && transparencies[face] != 0);
-				if (atex) z.sizeA++; else z.sizeO++;
+		if (transparencies != null)
+		{
+			for (int face = 0; face < faceCount; ++face)
+			{
+				boolean alpha = transparencies[face] != 0;
+				if (alpha)
+				{
+					z.sizeA++;
+				}
+				else
+				{
+					z.sizeO++;
+				}
 			}
 			return;
 		}
 		z.sizeO += faceCount;
 	}
 
-
-	private void pushZoneModel0(Model model, int x, int y, int z, GpuIntBuffer vertexBuffer, GpuIntBuffer ab) {
-			uploadModelScene(model, x,y,z,vertexBuffer, ab);
+	private void uploadZoneRenderable(Renderable r, int x, int y, int z, GpuIntBuffer vertexBuffer, GpuIntBuffer ab)
+	{
+		if (r instanceof Model)
+		{
+			uploadModelScene((Model) r, x, y, z, vertexBuffer, ab);
+		}
+		else if (r instanceof DynamicObject)
+		{
+			Model m = r.getModel();
+			if (m != null)
+			{
+				uploadModelScene(m, x, y, z, vertexBuffer, ab);
+			}
+		}
 	}
 
 	private int upload(Scene scene, SceneTilePaint tile, int tileZ, int tileX, int tileY, GpuIntBuffer vertexBuffer, GpuIntBuffer ab,
 		int lx, int lz)
 	{
-		tileX += scene.getWorldViewId() ==-1? GpuPlugin.SCENE_OFFSET:0;
-		tileY += scene.getWorldViewId() == -1 ?GpuPlugin.SCENE_OFFSET:0;
+		tileX += scene.getWorldViewId() == -1 ? GpuPlugin.SCENE_OFFSET : 0;
+		tileY += scene.getWorldViewId() == -1 ? GpuPlugin.SCENE_OFFSET : 0;
 
 		final int[][][] tileHeights = scene.getTileHeights();
 		final int swHeight = tileHeights[tileZ][tileX][tileY];

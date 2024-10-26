@@ -20,10 +20,6 @@ class Zone
 {
 	static final int VERT_SIZE = 20;
 
-//	static final int ZONE_STATE_CULL = 0;
-//	static final int ZONE_STATE_LIVE = 1;
-//	static final int ZONE_STATE_NEW = 2;
-
 	int glVao;
 	int bufLen;
 
@@ -162,8 +158,7 @@ class Zone
 			drawOff[i] /= VERT_SIZE / 4;
 			drawEnd[i] /= VERT_SIZE / 4;
 
-			assert drawEnd[i] >= drawOff[i];
-			drawEnd[i] = drawEnd[i] - drawOff[i];
+			drawEnd[i] -= drawOff[i]; // convert from end pos to length
 		}
 
 		glDrawOffset = Arrays.copyOfRange(drawOff, 0, drawIdx);
