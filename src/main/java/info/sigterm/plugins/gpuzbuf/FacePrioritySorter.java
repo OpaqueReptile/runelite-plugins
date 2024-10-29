@@ -62,7 +62,7 @@ class FacePrioritySorter
 	{
 		distances = new int[MAX_VERTEX_COUNT];
 		distanceFaceCount = new char[MAX_DIAMETER];
-		distanceToFaces = new char[MAX_DIAMETER][512];
+		distanceToFaces = new char[MAX_DIAMETER][700];
 
 		modelCanvasX = new float[MAX_VERTEX_COUNT];
 		modelCanvasY = new float[MAX_VERTEX_COUNT];
