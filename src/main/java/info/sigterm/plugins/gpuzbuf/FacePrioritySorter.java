@@ -108,7 +108,6 @@ class FacePrioritySorter
 		}
 
 		float[] p = proj.project(x, y, z);
-//		int[] p = project(x, y, z);
 		int zero = (int) p[2];
 
 		for (int v = 0; v < vertexCount; ++v)
@@ -134,8 +133,11 @@ class FacePrioritySorter
 			modelLocalZ[v] = vertexZ;
 
 			p = proj.project(vertexX, vertexY, vertexZ);
-//			p = project((int)vertexX, (int)vertexY, (int)vertexZ);
-			if (p[2]<50) return 0;
+			if (p[2] < 50)
+			{
+				return 0;
+			}
+
 			modelCanvasX[v] = centerX + p[0] * zoom / p[2];
 			modelCanvasY[v] = centerY + p[1] * zoom / p[2];
 			distances[v] = (int) p[2] - zero;
