@@ -1090,7 +1090,14 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		} else {
 			m.calculateBoundsCylinder();
 			VAO o = ctx.vaoP.get(size), a = o;
-			facePrioritySorter.pushSortedModel(worldProjection, m, g.getModelOrientation(), g.getX(), g.getZ(), g.getY(), o.vbo.vb, a.vbo.vb);
+			try
+			{
+				facePrioritySorter.pushSortedModel(worldProjection, m, g.getModelOrientation(), g.getX(), g.getZ(), g.getY(), o.vbo.vb, a.vbo.vb);
+			}
+			catch (Exception ex)
+			{
+				log.debug("error drawing entity", ex);
+			}
 		}
 	}
 

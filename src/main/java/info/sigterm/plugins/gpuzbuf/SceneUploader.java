@@ -72,7 +72,8 @@ class SceneUploader
 		}
 	}
 
-	void zoneSize(Scene scene, Zone zone, int mzx, int mzz) {
+	void zoneSize(Scene scene, Zone zone, int mzx, int mzz)
+	{
 		Tile[][][] tiles = scene.getExtendedTiles();
 
 		int basex = mzx << 10, basez = mzz << 10;
@@ -97,18 +98,20 @@ class SceneUploader
 		int[][][] roofs = scene.getRoofs();
 		Set<Integer> roofIds = new HashSet<>();
 
-		var vb = zone.vboO != null ? new GpuIntBuffer(zone.vboO.vb) : null ;
-		var ab = zone.vboA != null? new GpuIntBuffer(zone.vboA.vb) : null ;
+		var vb = zone.vboO != null ? new GpuIntBuffer(zone.vboO.vb) : null;
+		var ab = zone.vboA != null ? new GpuIntBuffer(zone.vboA.vb) : null;
 
-		for (int level =0 ; level <= 3; ++level)
+		for (int level = 0; level <= 3; ++level)
 		{
 			for (int xoff = 0; xoff < 8; ++xoff)
 			{
 				for (int zoff = 0; zoff < 8; ++zoff)
 				{
 					int rid = roofs[level][(mzx << 3) + xoff][(mzz << 3) + zoff];
-					if(rid>0)
+					if (rid > 0)
+					{
 						roofIds.add(rid);
+					}
 				}
 			}
 		}
@@ -148,26 +151,28 @@ class SceneUploader
 		}
 	}
 
-	private void uploadZoneLevel(Scene scene, Zone zone, int mzx, int mzz, int level, boolean visbelow, Set<Integer> roofIds, GpuIntBuffer vb, GpuIntBuffer ab) {
+	private void uploadZoneLevel(Scene scene, Zone zone, int mzx, int mzz, int level, boolean visbelow, Set<Integer> roofIds, GpuIntBuffer vb, GpuIntBuffer ab)
+	{
 		int ridx = 0;
 
 		// upload the roofs and save their positions
-		for (int id : roofIds) {
+		for (int id : roofIds)
+		{
 			int pos = zone.vboO != null ? zone.vboO.vb.position() : 0;
 			int posa = zone.vboA != null ? zone.vboA.vb.position() : 0;
 
 			uploadZoneLevelRoof(scene, mzx, mzz, level, id, visbelow, vb, ab);
 
 			int endpos = zone.vboO != null ? zone.vboO.vb.position() : 0;
-			int endposa = zone.vboA != null?  zone.vboA.vb.position() : 0;
+			int endposa = zone.vboA != null ? zone.vboA.vb.position() : 0;
 
-			if (endpos>pos || endposa>posa)
+			if (endpos > pos || endposa > posa)
 			{
 				zone.rids[level][ridx] = id;
 				zone.roofStart[level][ridx] = pos;
 				zone.roofEnd[level][ridx] = endpos;
 				zone.roofStartA[level][ridx] = posa;
-				zone.roofEndA[level][ridx]=endposa;
+				zone.roofEndA[level][ridx] = endposa;
 				++ridx;
 			}
 		}
@@ -176,7 +181,8 @@ class SceneUploader
 		uploadZoneLevelRoof(scene, mzx, mzz, level, 0, visbelow, vb, ab);
 	}
 
-	private void uploadZoneLevelRoof(Scene scene, int mzx, int mzz, int level, int roofId, boolean visbelow, GpuIntBuffer vb, GpuIntBuffer ab) {
+	private void uploadZoneLevelRoof(Scene scene, int mzx, int mzz, int level, int roofId, boolean visbelow, GpuIntBuffer vb, GpuIntBuffer ab)
+	{
 		byte[][][] settings = scene.getExtendedTileSettings();
 		int[][][] roofs = scene.getRoofs();
 		Tile[][][] tiles = scene.getExtendedTiles();
@@ -207,7 +213,10 @@ class SceneUploader
 					rid = roofs[maplevel - 1][msx][msz];
 				}
 
-				if (isvisbelow != visbelow) continue;
+				if (isvisbelow != visbelow)
+				{
+					continue;
+				}
 
 				if (rid == roofId)
 				{
@@ -286,7 +295,8 @@ class SceneUploader
 		}
 	}
 
-	private int uploadZoneTile(Scene scene, Tile t, GpuIntBuffer vertexBuffer, GpuIntBuffer ab, int basex, int basez) {
+	private int uploadZoneTile(Scene scene, Tile t, GpuIntBuffer vertexBuffer, GpuIntBuffer ab, int basex, int basez)
+	{
 		int len = 0;
 
 		SceneTilePaint paint = t.getSceneTilePaint();
@@ -295,17 +305,15 @@ class SceneUploader
 			Point tilePoint = t.getSceneLocation();
 			len = upload(scene, paint,
 				t.getRenderLevel(), tilePoint.getX(), tilePoint.getY(),
-				vertexBuffer, ab,
+				vertexBuffer,
 				tilePoint.getX() * 128 - basex, tilePoint.getY() * 128 - basez
-				);
+			);
 		}
 
 		SceneTileModel model = t.getSceneTileModel();
 		if (model != null)
 		{
-			int len_ = upload(model,
-				basex, basez,
-				vertexBuffer, ab, true);
+			int len_ = upload(model, basex, basez, vertexBuffer);
 			len += len_;
 		}
 
@@ -313,27 +321,27 @@ class SceneUploader
 		if (wallObject != null)
 		{
 			Renderable renderable1 = wallObject.getRenderable1();
-			uploadZoneRenderable(renderable1, wallObject.getX() - basex, wallObject.getZ(), wallObject.getY() - basez, vertexBuffer, ab);
+			uploadZoneRenderable(renderable1, 0, wallObject.getX() - basex, wallObject.getZ(), wallObject.getY() - basez, vertexBuffer, ab);
 
 			Renderable renderable2 = wallObject.getRenderable2();
-			uploadZoneRenderable(renderable2, wallObject.getX() - basex, wallObject.getZ(), wallObject.getY() - basez, vertexBuffer, ab);
+			uploadZoneRenderable(renderable2, 0, wallObject.getX() - basex, wallObject.getZ(), wallObject.getY() - basez, vertexBuffer, ab);
 		}
 
 		DecorativeObject decorativeObject = t.getDecorativeObject();
 		if (decorativeObject != null)
 		{
 			Renderable renderable = decorativeObject.getRenderable();
-			uploadZoneRenderable(renderable, decorativeObject.getX() + decorativeObject.getXOffset() - basex, decorativeObject.getZ(), decorativeObject.getY() + decorativeObject.getYOffset() - basez, vertexBuffer, ab);
+			uploadZoneRenderable(renderable, 0, decorativeObject.getX() + decorativeObject.getXOffset() - basex, decorativeObject.getZ(), decorativeObject.getY() + decorativeObject.getYOffset() - basez, vertexBuffer, ab);
 
 			Renderable renderable2 = decorativeObject.getRenderable2();
-			uploadZoneRenderable(renderable2, decorativeObject.getX() + decorativeObject.getXOffset() - basex, decorativeObject.getZ(), decorativeObject.getY() - decorativeObject.getYOffset() - basez, vertexBuffer, ab);
+			uploadZoneRenderable(renderable2, 0, decorativeObject.getX() + decorativeObject.getXOffset() - basex, decorativeObject.getZ(), decorativeObject.getY() - decorativeObject.getYOffset() - basez, vertexBuffer, ab);
 		}
 
 		GroundObject groundObject = t.getGroundObject();
 		if (groundObject != null)
 		{
 			Renderable renderable = groundObject.getRenderable();
-			uploadZoneRenderable(renderable, groundObject.getX() - basex, groundObject.getZ(), groundObject.getY() - basez, vertexBuffer, ab);
+			uploadZoneRenderable(renderable, 0, groundObject.getX() - basex, groundObject.getZ(), groundObject.getY() - basez, vertexBuffer, ab);
 		}
 
 		GameObject[] gameObjects = t.getGameObjects();
@@ -350,7 +358,7 @@ class SceneUploader
 			}
 
 			Renderable renderable = gameObject.getRenderable();
-			uploadZoneRenderable(renderable, gameObject.getX() - basex, gameObject.getZ(), gameObject.getY() - basez, vertexBuffer, ab);
+			uploadZoneRenderable(renderable, gameObject.getModelOrientation(), gameObject.getX() - basex, gameObject.getZ(), gameObject.getY() - basez, vertexBuffer, ab);
 		}
 
 		Tile bridge = t.getBridge();
@@ -399,24 +407,23 @@ class SceneUploader
 		z.sizeO += faceCount;
 	}
 
-	private void uploadZoneRenderable(Renderable r, int x, int y, int z, GpuIntBuffer vertexBuffer, GpuIntBuffer ab)
+	private void uploadZoneRenderable(Renderable r, int orient, int x, int y, int z, GpuIntBuffer vertexBuffer, GpuIntBuffer ab)
 	{
 		if (r instanceof Model)
 		{
-			uploadModelScene((Model) r, x, y, z, vertexBuffer, ab);
+			uploadModelScene((Model) r, orient, x, y, z, vertexBuffer, ab);
 		}
 		else if (r instanceof DynamicObject)
 		{
 			Model m = r.getModel();
 			if (m != null)
 			{
-				uploadModelScene(m, x, y, z, vertexBuffer, ab);
+				uploadModelScene(m, orient, x, y, z, vertexBuffer, ab);
 			}
 		}
 	}
 
-	private int upload(Scene scene, SceneTilePaint tile, int tileZ, int tileX, int tileY, GpuIntBuffer vertexBuffer, GpuIntBuffer ab,
-		int lx, int lz)
+	private int upload(Scene scene, SceneTilePaint tile, int tileZ, int tileX, int tileY, GpuIntBuffer vertexBuffer, int lx, int lz)
 	{
 		tileX += scene.getWorldViewId() == -1 ? GpuPlugin.SCENE_OFFSET : 0;
 		tileY += scene.getWorldViewId() == -1 ? GpuPlugin.SCENE_OFFSET : 0;
@@ -464,29 +471,50 @@ class SceneUploader
 		int tex = tile.getTexture() + 1;
 
 		vertexBuffer.put22224(lx2, ly2, lz2, hsl2);
-		if (tile.isFlat()) vertexBuffer.put2(tex, lx0-lx2, ly0-ly2, lz0-lz2); else vertexBuffer.put2(tex, lx2-lx2, ly2-ly2, lz2-lz2);
+		if (tile.isFlat())
+		{
+			vertexBuffer.put2(tex, lx0 - lx2, ly0 - ly2, lz0 - lz2);
+		}
+		else
+		{
+			vertexBuffer.put2(tex, lx2 - lx2, ly2 - ly2, lz2 - lz2);
+		}
 
 		vertexBuffer.put22224(lx3, ly3, lz3, hsl3);
-		if (tile.isFlat()) vertexBuffer.put2(tex, lx1-lx3, ly1-ly3, lz1-lz3); else vertexBuffer.put2(tex, lx3-lx3, ly3-ly3, lz3-lz3);
+		if (tile.isFlat())
+		{
+			vertexBuffer.put2(tex, lx1 - lx3, ly1 - ly3, lz1 - lz3);
+		}
+		else
+		{
+			vertexBuffer.put2(tex, lx3 - lx3, ly3 - ly3, lz3 - lz3);
+		}
 
 
-		vertexBuffer.put22224( lx1, ly1, lz1, hsl1);
-		if (tile.isFlat()) vertexBuffer.put2(tex, lx3-lx1, ly3-ly1, lz3-lz1); else vertexBuffer.put2(tex, lx1-lx1, ly1-ly1, lz1-lz1);
+		vertexBuffer.put22224(lx1, ly1, lz1, hsl1);
+		if (tile.isFlat())
+		{
+			vertexBuffer.put2(tex, lx3 - lx1, ly3 - ly1, lz3 - lz1);
+		}
+		else
+		{
+			vertexBuffer.put2(tex, lx1 - lx1, ly1 - ly1, lz1 - lz1);
+		}
 
-		vertexBuffer.put22224( lx0, ly0, lz0, hsl0);
-		vertexBuffer.put2(tex, lx0-lx0, ly0-ly0, lz0-lz0);
+		vertexBuffer.put22224(lx0, ly0, lz0, hsl0);
+		vertexBuffer.put2(tex, lx0 - lx0, ly0 - ly0, lz0 - lz0);
 
-		vertexBuffer.put22224( lx1, ly1, lz1, hsl1);
-		vertexBuffer.put2(tex, lx1-lx1, ly1-ly1, lz1-lz1);
+		vertexBuffer.put22224(lx1, ly1, lz1, hsl1);
+		vertexBuffer.put2(tex, lx1 - lx1, ly1 - ly1, lz1 - lz1);
 
-		vertexBuffer.put22224( lx3, ly3, lz3, hsl3);
-		vertexBuffer.put2(tex, lx3-lx3, ly3-ly3, lz3-lz3);
+		vertexBuffer.put22224(lx3, ly3, lz3, hsl3);
+		vertexBuffer.put2(tex, lx3 - lx3, ly3 - ly3, lz3 - lz3);
 
 		return 6;
 	}
 
 	private int upload(SceneTileModel sceneTileModel, int lx, int lz,
-		GpuIntBuffer vertexBuffer, GpuIntBuffer uvBuffer, boolean stream)
+					   GpuIntBuffer vertexBuffer)
 	{
 		final int[] faceX = sceneTileModel.getFaceX();
 		final int[] faceY = sceneTileModel.getFaceY();
@@ -503,9 +531,6 @@ class SceneUploader
 		final int[] triangleTextures = sceneTileModel.getTriangleTextureId();
 
 		final int faceCount = faceX.length;
-
-//		vertexBuffer.ensureCapacity(faceCount * 12*2);
-//		uvBuffer.ensureCapacity(faceCount * 12*2);
 
 		int cnt = 0;
 		for (int i = 0; i < faceCount; ++i)
@@ -539,28 +564,44 @@ class SceneUploader
 			int lz2 = vertexZ[vertex2] - lz;
 
 			int tex = triangleTextures != null ? triangleTextures[i] + 1 : 0;
-			vertexBuffer.put22224( lx0, ly0, lz0, hsl0);
-//			if (sceneTileModel.isFlat()) vertexBuffer.put(tex, vertexX[0] - lx, vertexY[0], vertexZ[0] - lz); else vertexBuffer.put(tex, vertexX[vertex0] - lx, vertexY[vertex0], vertexZ[vertex0] - lz);
-//			vertexBuffer.put(0); vertexBuffer.put(0);
-			if (sceneTileModel.isFlat()) vertexBuffer.put2(tex, vertexX[0] - lx - lx0, vertexY[0] - ly0, vertexZ[0] - lz - lz0); else vertexBuffer.put2(tex, vertexX[vertex0] - lx - lx0, vertexY[vertex0] - ly0, vertexZ[vertex0] - lz - lz0);
+			vertexBuffer.put22224(lx0, ly0, lz0, hsl0);
+			if (sceneTileModel.isFlat())
+			{
+				vertexBuffer.put2(tex, vertexX[0] - lx - lx0, vertexY[0] - ly0, vertexZ[0] - lz - lz0);
+			}
+			else
+			{
+				vertexBuffer.put2(tex, vertexX[vertex0] - lx - lx0, vertexY[vertex0] - ly0, vertexZ[vertex0] - lz - lz0);
+			}
 
-			vertexBuffer.put22224( lx1, ly1, lz1, hsl1);
-//			if (sceneTileModel.isFlat()) vertexBuffer.put(tex, vertexX[1] - lx, vertexY[1], vertexZ[1] - lz);else vertexBuffer.put(tex, vertexX[vertex1] - lx, vertexY[vertex1], vertexZ[vertex1] - lz);
-//			vertexBuffer.put(0); vertexBuffer.put(0);
-			if (sceneTileModel.isFlat()) vertexBuffer.put2(tex, vertexX[1] -lx - lx1, vertexY[1]-ly1, vertexZ[1] -lz - lz1);else vertexBuffer.put2(tex, vertexX[vertex1]-lx - lx1, vertexY[vertex1]-ly1, vertexZ[vertex1] -lz - lz1);
+			vertexBuffer.put22224(lx1, ly1, lz1, hsl1);
+			if (sceneTileModel.isFlat())
+			{
+				vertexBuffer.put2(tex, vertexX[1] - lx - lx1, vertexY[1] - ly1, vertexZ[1] - lz - lz1);
+			}
+			else
+			{
+				vertexBuffer.put2(tex, vertexX[vertex1] - lx - lx1, vertexY[vertex1] - ly1, vertexZ[vertex1] - lz - lz1);
+			}
 
-			vertexBuffer.put22224( lx2, ly2, lz2, hsl2);
-//			if (sceneTileModel.isFlat()) vertexBuffer.put(tex, vertexX[3] - lx, vertexY[3], vertexZ[3] - lz); else vertexBuffer.put(tex, vertexX[vertex2] - lx, vertexY[vertex2], vertexZ[vertex2] - lz);
-//			vertexBuffer.put(0); vertexBuffer.put(0);
-			if (sceneTileModel.isFlat()) vertexBuffer.put2(tex, vertexX[3] -lx - lx2, vertexY[3]-ly2, vertexZ[3] -lz - lz2); else vertexBuffer.put2(tex, vertexX[vertex2] -lx - lx2, vertexY[vertex2]-ly2, vertexZ[vertex2] -lz - lz2);
+			vertexBuffer.put22224(lx2, ly2, lz2, hsl2);
+			if (sceneTileModel.isFlat())
+			{
+				vertexBuffer.put2(tex, vertexX[3] - lx - lx2, vertexY[3] - ly2, vertexZ[3] - lz - lz2);
+			}
+			else
+			{
+				vertexBuffer.put2(tex, vertexX[vertex2] - lx - lx2, vertexY[vertex2] - ly2, vertexZ[vertex2] - lz - lz2);
+			}
 		}
 
 		return cnt;
 	}
 
 	// scene upload
-	private int uploadModelScene(Model model, int x, int y, int z, GpuIntBuffer vertexBuffer, GpuIntBuffer ab)
+	private int uploadModelScene(Model model, int orient, int x, int y, int z, GpuIntBuffer vertexBuffer, GpuIntBuffer ab)
 	{
+		final int vertexCount = model.getVerticesCount();
 		final int triangleCount = model.getFaceCount();
 
 		final float[] vertexX = model.getVerticesX();
@@ -582,7 +623,36 @@ class SceneUploader
 		final int[] texIndices3 = model.getTexIndices3();
 
 		final byte[] transparencies = model.getFaceTransparencies();
-//		final byte[] facePriorities = model.getFaceRenderPriorities();
+
+		int orientSin = 0;
+		int orientCos = 0;
+		if (orient != 0)
+		{
+			orientSin = Perspective.SINE[orient];
+			orientCos = Perspective.COSINE[orient];
+		}
+
+		for (int v = 0; v < vertexCount; ++v)
+		{
+			int vx = (int) vertexX[v];
+			int vy = (int) vertexY[v];
+			int vz = (int) vertexZ[v];
+
+			if (orient != 0)
+			{
+				int x0 = vx;
+				vx = vz * orientSin + x0 * orientCos >> 16;
+				vz = vz * orientCos - x0 * orientSin >> 16;
+			}
+
+			vx += x;
+			vy += y;
+			vz += z;
+
+			modelLocalX[v] = vx;
+			modelLocalY[v] = vy;
+			modelLocalZ[v] = vz;
+		}
 
 		int len = 0;
 		for (int face = 0; face < triangleCount; ++face)
@@ -592,7 +662,7 @@ class SceneUploader
 			int color3 = color3s[face];
 
 			boolean atex = (transparencies != null && transparencies[face] != 0);
-			GpuIntBuffer vb = atex?ab:vertexBuffer;
+			GpuIntBuffer vb = atex ? ab : vertexBuffer;
 
 			if (color3 == -1)
 			{
@@ -607,29 +677,17 @@ class SceneUploader
 			int triangleB = indices2[face];
 			int triangleC = indices3[face];
 
-			int vx1 = (int) vertexX[triangleA];
-			int vy1 = (int) vertexY[triangleA];
-			int vz1 = (int) vertexZ[triangleA];
+			int vx1 = (int) modelLocalX[triangleA];
+			int vy1 = (int) modelLocalY[triangleA];
+			int vz1 = (int) modelLocalZ[triangleA];
 
-			int vx2 = (int) vertexX[triangleB];
-			int vy2 = (int) vertexY[triangleB];
-			int vz2 = (int) vertexZ[triangleB];
+			int vx2 = (int) modelLocalX[triangleB];
+			int vy2 = (int) modelLocalY[triangleB];
+			int vz2 = (int) modelLocalZ[triangleB];
 
-			int vx3 = (int) vertexX[triangleC];
-			int vy3 = (int) vertexY[triangleC];
-			int vz3 = (int) vertexZ[triangleC];
-
-			vx1 += x;
-			vx2 += x;
-			vx3 += x;
-
-			vy1 += y;
-			vy2 += y;
-			vy3 += y;
-
-			vz1 += z;
-			vz2 += z;
-			vz3 += z;
+			int vx3 = (int) modelLocalX[triangleC];
+			int vy3 = (int) modelLocalY[triangleC];
+			int vz3 = (int) modelLocalZ[triangleC];
 
 			int texA, texB, texC;
 
@@ -651,13 +709,13 @@ class SceneUploader
 			int texture = faceTextures != null ? faceTextures[face] + 1 : 0;
 
 			vb.put22224(vx1, vy1, vz1, packedAlpha | color1);
-			vb.put2(texture, (int) vertexX[texA] + x - vx1, (int) vertexY[texA] + y - vy1, (int) vertexZ[texA] + z - vz1);
+			vb.put2(texture, (int) modelLocalX[texA] - vx1, (int) modelLocalY[texA] - vy1, (int) modelLocalZ[texA] - vz1);
 
 			vb.put22224(vx2, vy2, vz2, packedAlpha | color2);
-			vb.put2(texture, (int) vertexX[texB] + x - vx2, (int) vertexY[texB] + y - vy2, (int) vertexZ[texB] + z - vz2);
+			vb.put2(texture, (int) modelLocalX[texB] - vx2, (int) modelLocalY[texB] - vy2, (int) modelLocalZ[texB] - vz2);
 
 			vb.put22224(vx3, vy3, vz3, packedAlpha | color3);
-			vb.put2(texture, (int) vertexX[texC] + x - vx3, (int) vertexY[texC] + y - vy3, (int) vertexZ[texC] + z - vz3);
+			vb.put2(texture, (int) modelLocalX[texC] - vx3, (int) modelLocalY[texC] - vy3, (int) modelLocalZ[texC] - vz3);
 
 			len += 3;
 		}
@@ -690,7 +748,6 @@ class SceneUploader
 		final int[] texIndices3 = model.getTexIndices3();
 
 		final byte[] transparencies = model.getFaceTransparencies();
-//		final byte[] facePriorities = model.getFaceRenderPriorities();
 
 		final byte overrideAmount = model.getOverrideAmount();
 		final byte overrideHue = model.getOverrideHue();
@@ -705,7 +762,8 @@ class SceneUploader
 			orientCosine = Perspective.COSINE[orientation] / 65536f;
 		}
 
-		for (int v = 0; v < vertexCount; ++v) {
+		for (int v = 0; v < vertexCount; ++v)
+		{
 			float vertexX = verticesX[v];
 			float vertexY = verticesY[v];
 			float vertexZ = verticesZ[v];
@@ -717,7 +775,9 @@ class SceneUploader
 				vertexZ = vertexZ * orientCosine - x0 * orientSine;
 			}
 
-			vertexX += x; vertexY += y; vertexZ += z;
+			vertexX += x;
+			vertexY += y;
+			vertexZ += z;
 
 			modelLocalX[v] = vertexX;
 			modelLocalY[v] = vertexY;
@@ -788,16 +848,16 @@ class SceneUploader
 			int packedAlpha = faceAlpha(faceTextures, transparencies, face) << 24;
 			int texture = faceTextures != null ? faceTextures[face] + 1 : 0;
 
-			var vb = atex?alphaBuffer:opaqueBuffer;
+			var vb = atex ? alphaBuffer : opaqueBuffer;
 
-			put(vb,vx1,vy1,vz1, packedAlpha | color1);
-			put2222(vb,texture, (int)modelLocalX[texA]-(int)vx1, (int)modelLocalY[texA]-(int)vy1, (int)modelLocalZ[texA]-(int)vz1);
+			put(vb, vx1, vy1, vz1, packedAlpha | color1);
+			put2222(vb, texture, (int) modelLocalX[texA] - (int) vx1, (int) modelLocalY[texA] - (int) vy1, (int) modelLocalZ[texA] - (int) vz1);
 
-			put(vb,vx2,vy2,vz2, packedAlpha | color2);
-			put2222(vb,texture, (int)modelLocalX[texB]-(int)vx2, (int)modelLocalY[texB]-(int)vy2, (int)modelLocalZ[texB]-(int)vz2);
+			put(vb, vx2, vy2, vz2, packedAlpha | color2);
+			put2222(vb, texture, (int) modelLocalX[texB] - (int) vx2, (int) modelLocalY[texB] - (int) vy2, (int) modelLocalZ[texB] - (int) vz2);
 
-			put(vb,vx3,vy3,vz3, packedAlpha | color3);
-			put2222(vb,texture, (int)modelLocalX[texC]-(int)vx3, (int)modelLocalY[texC]-(int)vy3, (int)modelLocalZ[texC]-(int)vz3);
+			put(vb, vx3, vy3, vz3, packedAlpha | color3);
+			put2222(vb, texture, (int) modelLocalX[texC] - (int) vx3, (int) modelLocalY[texC] - (int) vy3, (int) modelLocalZ[texC] - (int) vz3);
 
 			len += 3;
 		}
@@ -805,14 +865,10 @@ class SceneUploader
 		return len;
 	}
 
-	static void put2222(IntBuffer vb, int x, int y, int z, int w) {
-		vb.put(((y & 0xffff) << 16) | (x&0xffff));
-		vb.put(((w & 0xffff) << 16) | (z&0xffff));
-	}
-
-	private static void put(IntBuffer vb, int x, int y, int z, int w){
-		vb.put(x); vb.put(y); vb.put(z);
-		vb.put(w);
+	static void put2222(IntBuffer vb, int x, int y, int z, int w)
+	{
+		vb.put(((y & 0xffff) << 16) | (x & 0xffff));
+		vb.put(((w & 0xffff) << 16) | (z & 0xffff));
 	}
 
 	static void put(IntBuffer vb, float x, float y, float z, int w)
